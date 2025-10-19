@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app1
+  labels:
+    name: app2
+    tier: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: app2
+      tier: frontend
+  template:
+    metadata:
+      labels:
+        name: app2
+        tier: frontend
+    spec:
+      containers:
+      - name: app2
+        image: lakshman045/app2:v1
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: app2
+spec:
+  selector:
+    name: app2
+    tier: frontend
+  ports:
+  - name: nginx-svc-port
+    protocol: TCP
+    port: 80
+    targetPort: 80
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+    name: app2
+    annotations:
+      kubernetes.io/ingress.class: alb
+      alb.ingress.kubernetes.io/scheme: internet-facing
+      alb.ingress.kubernetes.io/target-type: ip
+      alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:618480995829:certificate/66de6753-bb21-446e-9e66-ab3547f5d5e9
+      alb.ingress.kubernetes.io/listen-ports: '[ {"HTTPS": 443}]'
+      alb.ingress.kubernetes.io/tags: Environment=dev,Team=test
+      alb.ingress.kubernetes.io/group.name: expense
+spec:
+    #ingressClassName: alb
+    rules:
+    - host: "app2.lakshmangundapu.icu"
+      http:
+        paths:
+        - pathType: Prefix
+          path: "/"
+          backend:
+            service:
+              name: app2
+              port:
+                number: 80
